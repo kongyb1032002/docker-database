@@ -1,0 +1,107 @@
+# version: '3.8'
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: go
+    volumes:
+      - ./mysql:/var/run/mysqld
+    ports:
+      - '3306:3306'
+    networks:
+      - api-network
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u',
+          'root',
+          '-p rootpassword',
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  oracle:
+    container_name: oracle
+    image: gvenzl/oracle-xe 
+    environment:
+      ORACLE_ALLOW_REMOTE: "true"  
+      # ORACLE_USERNAME: "system"      
+      ORACLE_PASSWORD: "oracle"      # Mật khẩu
+      ORACLE_DATABASE: "VNPAY"        
+    ports:
+      - '1521:1521'  # Cổng mặc định của Oracle
+    networks:
+      - api-network
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'sqlplus',
+          '-s',
+          'system/oracle@//localhost:1521/ORCL',
+          'SELECT 1 FROM DUAL;',
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  postgres:
+    container_name: postgres
+    restart: always
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: testdb
+    ports:
+      - '5432:5432'
+    networks:
+      - api-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "testdb"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Mounting initialization script
+      - ./postgres:/var/run/postgresql
+
+
+  sqlite:
+    container_name: sqlite
+    image: alpine/sqlite
+    # volumes:
+    #   - ./database:/data  # Mounting volume for SQLite data
+    # command: alpine/sqlite test.db "CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY, name TEXT);"
+    networks:
+      - api-network
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - '27017:27017'
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
+networks:
+  api-network: 
+    driver: bridge
