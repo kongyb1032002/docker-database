@@ -102,6 +102,15 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
       ME_CONFIG_BASICAUTH: false
+  mariadb:
+    image: mariadb
+    restart: always
+    environment:
+      - MARIADB_ROOT_PASSWORD=password
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mariadb:/run/mysqld
 networks:
   api-network: 
     driver: bridge
